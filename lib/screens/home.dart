@@ -1,7 +1,8 @@
 import 'dart:async';
-import 'dart:html';
 
 import 'package:flutter/material.dart';
+import 'package:geocoder/geocoder.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class Home extends StatefulWidget {
@@ -24,12 +25,11 @@ class _HomeState extends State<Home> {
 
   getLoc() async {
     // Get Location
-    Position position = await Geolocation.getCurrentPosition(
+    Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
-    final coordinates = new Coordinates(position.latitude, position.longitude);
-    var addresses =
-        await Geocoder.local.findAddressesFromCoordinates(coordinates);
+    final coordinates = Coordinates(position.latitude, position.longitude);
+    var addresses = await Geocoder.local.findAddressesFromCoordinates(coordinates);
     setState(() {
       lat = position.latitude;
       long = position.longitude;
