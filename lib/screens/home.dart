@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:ffi';
 
 import 'package:flutter/material.dart';
-import 'package:geocoder/geocoder.dart';
+// import 'package:geocoder/geocoder.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Home extends StatefulWidget {
   // Home({Key? key}) : super(key: key);
@@ -12,65 +16,275 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  Completer<GoogleMapController> _controller = Completer();
-  double zoomVal = 5.0;
-  double lat = 0, long = 0;
-  double indoLat = -6.200000, indoLong = 106.816666;
-  String location = '';
 
-  static const CameraPosition _kGooglePlex = CameraPosition(
-    target: LatLng(-6.229728, 106.6894312),
-    zoom: 14.4746,
-  );
-
-  getLoc() async {
-    // Get Location
-    Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-    final coordinates = Coordinates(position.latitude, position.longitude);
-    var addresses = await Geocoder.local.findAddressesFromCoordinates(coordinates);
-    setState(() {
-      lat = position.latitude;
-      long = position.longitude;
-      location = addresses.first.toString();
-    });
-  }
+  bool servicestatus = false;
+  bool haspermission = false;
+  late LocationPermission permission;
+  late Position position;
+  String long = "", lat = "";
+  late double longd, latd;
+  late StreamSubscription<Position> positionStream;
+  // Set<Marker> _markers = {};
+  // Completer<GoogleMapController> _controller = Completer();
 
   @override
   void initState() {
+    // TODO: implement initState
+    checkGps();
     super.initState();
-    getLoc();
   }
-
-  static const CameraPosition _kLake = CameraPosition(
-      target: LatLng(-6.229728, 106.6894312), bearing: 192, tilt: 59, zoom: 15);
-
+  
   @override
   Widget build(BuildContext context) {
+    var scaffoldKey = GlobalKey<ScaffoldState>();
+
     return Scaffold(
-      body: GoogleMap(
-        mapToolbarEnabled: false,
-        zoomControlsEnabled: false,
-        compassEnabled: true,
-        mapType: MapType.normal,
-        initialCameraPosition: _kGooglePlex,
-        onMapCreated: (GoogleMapController controller) {
-          _controller.complete(controller);
-        },
-        minMaxZoomPreference: MinMaxZoomPreference.unbounded,
-        zoomGesturesEnabled: true,
+      backgroundColor: Colors.lightBlueAccent,
+      appBar: AppBar(
+        backgroundColor: Colors.lightBlueAccent,
+        elevation: 0.0,
+        actions: [
+          IconButton(
+            onPressed: () {
+              print('click master data');
+            }, 
+            icon: const Icon(Icons.menu),
+          )
+        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _goToTheLake,
-        label: const Text('Attendence'),
-        icon: const Icon(Icons.edit_calendar_outlined),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              const Text(
+                'e-Attendance', 
+                textAlign: TextAlign.center, 
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 25,
+                  color: Colors.white
+                ),
+              ),
+              const Padding(padding: EdgeInsets.only(top: 15)),
+              GestureDetector(
+                onTap: () {
+                  // print('tap');
+                  _onBottomPressed();
+                },
+                child: CircleAvatar(
+                  backgroundColor: Colors.amber[800],
+                  radius: 40,
+                  child: const Icon(
+                    Icons.checklist,
+                    size: 30,
+                    color: Colors.white
+                  ),
+                ),
+              ),
+              const Padding(padding: EdgeInsets.only(top: 15)),
+              const Text(
+                'Check in', 
+                textAlign: TextAlign.center, 
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Colors.white
+                ),
+              ),
+              const Padding(padding: EdgeInsets.only(top: 35)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: const [
+                  Text(
+                    'Check in', 
+                    textAlign: TextAlign.center, 
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: Colors.white
+                    ),
+                  ),
+                  Text(
+                    'Check out', 
+                    textAlign: TextAlign.center, 
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: Colors.white
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
+        ]
       ),
     );
   }
 
-  Future<void> _goToTheLake() async {
-    final GoogleMapController controller = await _controller.future;
-    controller.animateCamera(CameraUpdate.newCameraPosition(_kLake));
+  void _onBottomPressed() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          color: Colors.black54,
+          height: 700,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).canvasColor,
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(30),
+                topLeft: Radius.circular(30),
+              )
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: <Widget>[
+                const Padding(
+                  padding: EdgeInsets.only(top: 15),
+                  child: Text(
+                    'Your Location',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 30),
+                  child: SizedBox(
+                    height: 200,
+                    child: GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: LatLng(latd, longd),
+                        zoom: 15,
+                      ),
+                      myLocationEnabled: true,
+                      markers: <Marker>{
+                        Marker(
+                          markerId: MarkerId('MyLoc'),
+                          position: LatLng(latd, longd),
+                          icon: BitmapDescriptor.defaultMarker
+                        ),
+                      },
+                    )
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 30),
+                  child: MaterialButton(
+                    color: Colors.amber[800],
+                    onPressed: () {
+                      // print('check in done');
+                      saveData();
+                    },
+                    child: const Text(
+                      'Check In',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w300
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        );
+      }
+    );
   }
+
+  checkGps() async {
+      servicestatus = await Geolocator.isLocationServiceEnabled();
+      if(servicestatus){
+        permission = await Geolocator.checkPermission();
+      
+        if (permission == LocationPermission.denied) {
+            permission = await Geolocator.requestPermission();
+            if (permission == LocationPermission.denied) {
+                print('Location permissions are denied');
+            }else if(permission == LocationPermission.deniedForever){
+                print("'Location permissions are permanently denied");
+            }else{
+                haspermission = true;
+            }
+        }else{
+            haspermission = true;
+        }
+
+        if(haspermission){
+            setState(() {
+              //refresh the UI
+            });
+
+            getLocation();
+        }
+      }else{
+        print("GPS Service is not enabled, turn on GPS location");
+      }
+
+      setState(() {
+         //refresh the UI
+      });
+  }
+
+  getLocation() async {
+      position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high
+      );
+      print(position.longitude); //Output: 80.24599079
+      print(position.latitude); //Output: 29.6593457
+
+      long = position.longitude.toString();
+      lat = position.latitude.toString();
+      longd = position.longitude;
+      latd = position.latitude;
+
+      setState(() {
+         //refresh UI
+      });
+
+      LocationSettings locationSettings = const LocationSettings(
+        accuracy: LocationAccuracy.high, //accuracy of the location data
+        distanceFilter: 100, //minimum distance (measured in meters) a 
+        //device must move horizontally before an update event is generated;
+      );
+
+      StreamSubscription<Position> positionStream = Geolocator.getPositionStream(
+            locationSettings: locationSettings).listen((Position position) {
+            print(position.longitude); //Output: 80.24599079
+            print(position.latitude); //Output: 29.6593457
+
+            long = position.longitude.toString();
+            lat = position.latitude.toString();
+
+            setState(() {
+              //refresh UI on update
+            });
+      });
+  }
+
+  saveData() async {
+    var dataLoc = {
+      'lat': latd,
+      'long': longd,
+      'checkin': DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()),
+      'checkout': '',
+    };
+    print(DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now()));
+    print(jsonEncode(dataLoc));
+
+    // final prefs = await SharedPreferences.getInstance();
+    // prefs.setString(key, value)
+
+  }
+
+
 }

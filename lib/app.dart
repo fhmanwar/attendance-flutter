@@ -16,7 +16,7 @@ class _AppState extends State<App> {
     final prefs = await SharedPreferences.getInstance();
     // final value = prefs.getString('userId');
     // var _duration = new Duration(seconds: 5);
-    return new Timer(Duration(seconds: 3), () {
+    return Timer(Duration(seconds: 3), () {
       Navigate().gotoHome(context);
     });
   }
@@ -34,42 +34,42 @@ class _AppState extends State<App> {
         fit: StackFit.expand,
         children: <Widget>[
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.lightBlueAccent,
             ),
           ),
           Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: <Widget>[
-              Expanded(
-                flex: 2,
-                child: Container(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Padding(
-                        padding: EdgeInsets.only(top: 10.0),
-                      ),
-                      // CircleAvatar(
-                      //   backgroundColor: Colors.white,
-                      //   radius: 75.0,
-                      //   child: new Image.asset(
-                      //     'assets/images.jpg',
-                      //     scale: 2.1,
-                      //   ),
-                      // ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 10.0),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              // Expanded(
+              //   flex: 2,
+              //   child: Container(
+              //     child: Column(
+              //       mainAxisAlignment: MainAxisAlignment.center,
+              //       children: const <Widget>[
+              //         Padding(
+              //           padding: EdgeInsets.only(top: 10.0),
+              //         ),
+              //         // CircleAvatar(
+              //         //   backgroundColor: Colors.white,
+              //         //   radius: 75.0,
+              //         //   child: new Image.asset(
+              //         //     'assets/images.jpg',
+              //         //     scale: 2.1,
+              //         //   ),
+              //         // ),
+              //         Padding(
+              //           padding: EdgeInsets.only(top: 10.0),
+              //         ),
+              //       ],
+              //     ),
+              //   ),
+              // ),
               Expanded(
                 flex: 1,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
+                  children: const <Widget>[
                     CircularProgressIndicator(
                       backgroundColor: Colors.deepPurpleAccent,
                     ),
